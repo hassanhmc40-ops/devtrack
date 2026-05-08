@@ -2,84 +2,58 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Project;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    
-    public function index()
-    {
-        
-        $users = User::all();
-        return view('users.index', compact('users'));
-    }
-
- 
-    public function create()
-    {
-        return view('users.create');
-    }
-
     /**
-     * Store a newly created resource in storage.
+     * Add a member to the project (US7)
      */
-    public function store(Request $request)
+    public function store(Request $request, Project $project)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|min:3|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+        $this->authorize('addMember', $project);
+
+        // Validate email
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
         ]);
-             User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            
-        ]);
-        return redirect()->route('users.index')->with('success', 'Utilisateur créé avec succès !');
-    }    
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-       return view('users.show', compact('user'));
+        $user = User::where('email', $request->email)->first();
+
+        // Check if user is already a member
+        if ($project->users()->where('user_id', $user->id)->exists()) {
+            return back()->withErrors(['email' => 'User is already a member of this project.']);
+        }
+
+        // Attach user as developer
+        $project->users()->attach($user->id, ['role' => 'developer']);
+
+        return back()->with('success', 'Developer added successfully!');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Remove a member from the project (US7)
      */
-    public function edit(string $id)
+    public function destroy(Project $project, User $user)
     {
-      return view('users.edit', compact('user'));
-    }
+        $this->authorize('removeMember', $project);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-            $request->validate([
-            'name' => 'required|string|min:3|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:6|confirmed',
-        ]);
-          $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-           
-        ];
-        
-    }
+        // Prevent removing the lead
+        $membership = $project->users()->where('user_id', $user->id)->first();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-       $user->delete();
-        return redirect()->route('users.index')->with('success', 'Utilisateur supprimé avec succès !'); 
+        if (!$membership) {
+            return back()->withErrors(['error' => 'User is not a member of this project.']);
+        }
+
+        if ($membership->pivot->role === 'lead') {
+            return back()->withErrors(['error' => 'Cannot remove the project lead.']);
+        }
+
+        // Detach user
+        $project->users()->detach($user->id);
+
+        return back()->with('success', 'Member removed successfully!');
     }
 }

@@ -6,113 +6,124 @@ use Illuminate\Http\Request;
 use App\Models\Task;
 use App\Models\Project;
 use App\Models\User;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 
 class TaskController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display tasks for a project (US8)
+     * Note: Tasks are shown in projects.show, so this might be optional
      */
-    public function index()
+    public function index(Project $project)
     {
-        $tasks = Task::with(['project', 'assignedUser'])->get();
-        return view('tasks.index', compact('tasks'));
+        $this->authorize('view', $project);
+
+        $tasks = $project->tasks()->with('assignedUser')->get();
+
+        return view('tasks.index', compact('project', 'tasks'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new task (US9)
      */
-    public function create()
+    public function create(Project $project)
     {
-        $projects = Project::all();
-        $users = User::all();
-        return view('tasks.create', compact('projects', 'users'));
+        // Check if user is project lead
+        $this->authorize('update', $project); // Only lead can create tasks
+
+        // Get project members for assignment dropdown
+        $members = $project->users;
+
+        return view('tasks.create', compact('project', 'members'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created task (US9)
      */
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request, Project $project)
     {
-         $request->validate([
-            'title' => 'required|string|min:3|max:255',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-            'priority' => 'required|in:low,medium,high',
-            'status' => 'required|in:todo,in_progress,done',
-            'project_id' => 'required|exists:projects,id',
-            'assigned_to' => 'nullable|exists:users,id',
-        ]);
+        $this->authorize('update', $project); // Only lead can create tasks
 
-        Task::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-            'priority' => $request->priority,
-            'status' => $request->status,
-            'project_id' => $request->project_id,
-            'assigned_to' => $request->assigned_to,
-        ]);
+        // Verify assigned user is a project member
+        if (!$project->users()->where('user_id', $request->assigned_to)->exists()) {
+            return back()->withErrors(['assigned_to' => 'User must be a project member.']);
+        }
 
-        return redirect()->route('tasks.index')->with('success', 'Tâche créée avec succès !');
+        $task = $project->tasks()->create($request->validated());
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Task created successfully!');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified task
      */
-    public function show(string $id)
+    public function show(Project $project, Task $task)
     {
-        $task = Task::with(['project', 'assignedUser'])->findOrFail($id);
-        return view('tasks.show', compact('task'));
+        $this->authorize('view', $task);
+
+        $task->load(['project', 'assignedUser']);
+
+        return view('tasks.show', compact('project', 'task'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the task (US10)
      */
-    public function edit(string $id)
+    public function edit(Project $project, Task $task)
     {
-        $task = Task::with(['project', 'assignedUser'])->findOrFail($id);
-        $projects = Project::all();
-        $users = User::all();
-        return view('tasks.edit', compact('task', 'projects', 'users'));
+        $this->authorize('update', $task);
+
+        $members = $project->users;
+
+        return view('tasks.edit', compact('project', 'task', 'members'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified task (US10)
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateTaskRequest $request, Project $project, Task $task)
     {
-        $task = Task::with(['project', 'assignedUser'])->findOrFail($id);
+        $this->authorize('update', $task);
+
+        // Verify assigned user is a project member
+        if (!$project->users()->where('user_id', $request->assigned_to)->exists()) {
+            return back()->withErrors(['assigned_to' => 'User must be a project member.']);
+        }
+
+        $task->update($request->validated());
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Task updated successfully!');
+    }
+
+    /**
+     * Update task status (US11 - Developer can only change status)
+     */
+    public function updateStatus(Request $request, Project $project, Task $task)
+    {
+        $this->authorize('changeStatus', $task);
 
         $request->validate([
-            'title' => 'required|string|min:3|max:255',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-            'priority' => 'required|in:low,medium,high',
             'status' => 'required|in:todo,in_progress,done',
-            'project_id' => 'required|exists:projects,id',
-            'assigned_to' => 'nullable|exists:users,id',
         ]);
 
-        $task->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-            'priority' => $request->priority,
-            'status' => $request->status,
-            'project_id' => $request->project_id,
-            'assigned_to' => $request->assigned_to,
-        ]);
+        $task->update(['status' => $request->status]);
 
-        return redirect()->route('tasks.index')->with('success', 'Tâche mise à jour avec succès !');
+        return back()->with('success', 'Task status updated successfully!');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified task (US12)
      */
-    public function destroy(string $id)
+    public function destroy(Project $project, Task $task)
     {
-       $task = Task::with(['project', 'assignedUser'])->findOrFail($id);
-       $task->delete();
-       return redirect()->route('tasks.index')->with('success', 'Tâche supprimée avec succès !');
+        $this->authorize('delete', $task);
+
+        $task->delete();
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Task deleted successfully!');
     }
 }

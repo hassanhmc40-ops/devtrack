@@ -2,94 +2,147 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectRequest;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the user's projects (Dashboard - US2)
      */
     public function index()
     {
-        $projects = Project::all();
+        // Get only projects where user is a member
+        $projects = auth()->user()->projects()
+            ->withCount([
+                'tasks',
+                'tasks as completed_tasks_count' => function ($query) {
+                    $query->where('status', 'done');
+                }
+            ])
+            ->get();
+
         return view('projects.index', compact('projects'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new project (US3)
      */
     public function create()
     {
+        $this->authorize('create', Project::class);
+
         return view('projects.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created project (US3)
      */
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
-       $request->validate([
-            'title' => 'required|string|min:3|max:255',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-        ]);
+        $this->authorize('create', Project::class);
 
-        Project::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-        ]);
+        // Create project
+        $project = Project::create($request->validated());
 
-        return redirect()->route('projects.index')->with('success', 'Projet créé avec succès !');
+        // Attach creator as lead
+        $project->users()->attach(auth()->id(), ['role' => 'lead']);
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Project created successfully!');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified project (US8 - shows tasks)
      */
-    public function show(string $id)
+    public function show(Project $project)
     {
-        $project = Project::findOrFail($id);
+        $this->authorize('view', $project);
+
+        // Eager load relationships to prevent N+1
+        $project->load(['users', 'tasks.assignedUser']);
+
         return view('projects.show', compact('project'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the project (US4)
      */
-    public function edit(string $id)
+    public function edit(Project $project)
     {
+        $this->authorize('update', $project);
+
         return view('projects.edit', compact('project'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified project (US4)
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateProjectRequest $request, Project $project)
     {
-        $project = Project::findOrFail($id);
+        $this->authorize('update', $project);
 
-        $request->validate([
-            'title' => 'required|string|min:3|max:255',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-        ]);
+        $project->update($request->validated());
 
-        $project->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-        ]);
-
-        return redirect()->route('projects.index')->with('success', 'Projet mis à jour avec succès !');
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Project updated successfully!');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Archive (soft delete) the project (US5)
      */
-    public function destroy(string $id)
+    public function destroy(Project $project)
     {
-               $project = Project::findOrFail($id);
-               $project->delete();
-        return redirect()->route('projects.index')->with('success', 'Projet supprimé avec succès !');
+        $this->authorize('delete', $project);
+
+        $project->delete(); // Soft delete
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project archived successfully!');
+    }
+
+    /**
+     * Show archived projects (US5)
+     */
+    public function archives()
+    {
+        $archivedProjects = auth()->user()->projects()
+            ->onlyTrashed()
+            ->withCount('tasks')
+            ->get();
+
+        return view('projects.archives', compact('archivedProjects'));
+    }
+
+    /**
+     * Restore an archived project (US6)
+     */
+    public function restore($id)
+    {
+        $project = Project::onlyTrashed()->findOrFail($id);
+
+        $this->authorize('restore', $project);
+
+        $project->restore();
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project restored successfully!');
+    }
+
+    /**
+     * Permanently delete a project (Bonus)
+     */
+    public function forceDelete($id)
+    {
+        $project = Project::onlyTrashed()->findOrFail($id);
+
+        $this->authorize('forceDelete', $project);
+
+        $project->forceDelete();
+
+        return redirect()->route('projects.archives')
+            ->with('success', 'Project permanently deleted!');
     }
 }
