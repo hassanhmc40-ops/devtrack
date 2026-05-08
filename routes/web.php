@@ -95,4 +95,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/projects/{project}/tasks/{task}/status', [TaskController::class, 'updateStatus'])
         ->name('tasks.status');
 
+    /*
+    |----------------------------------------------------------------------
+    | Profile / Settings Routes
+    |----------------------------------------------------------------------
+    */
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
 });

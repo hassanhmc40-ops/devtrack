@@ -1,17 +1,22 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+<?php
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    {{ __("You're logged in!") }}
-                </div>
-            </div>
-        </div>
+// The /dashboard route is handled by ProjectController@index
+// which renders projects.index directly.
+// This file is a fallback redirect in case it is ever called.
+
+use Illuminate\Support\Facades\Route;
+
+?>
+@php
+    // Safety redirect — the real dashboard is served by ProjectController@index
+    // returning view('projects.index'). This file should not be reached normally.
+@endphp
+
+<x-app-layout>
+    @section('title', 'Dashboard')
+    @section('topbar-title', 'Dashboard')
+    <div style="text-align:center;padding:80px 0;">
+        <p style="font-size:14px;color:#6b7280;">Redirecting to your projects…</p>
+        <script>window.location.href = '{{ route("projects.index") }}';</script>
     </div>
 </x-app-layout>
