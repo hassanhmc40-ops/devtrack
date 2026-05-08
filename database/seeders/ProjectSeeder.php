@@ -18,7 +18,7 @@ class ProjectSeeder extends Seeder
         $dev3 = User::where('email', 'abderrahman@gmail.com')->first();
 
         // Project 1: DevTrack MVP
-        $project1 = Projects::create([
+        $project1 = Project::create([
             'title' => 'devtrack mvp', // Will be auto-formatted to "Devtrack mvp" by mutator
             'description' => 'A simple project and task management tool for development teams.',
             'deadline' => now()->addDays(14)->toDateString(),

@@ -25,6 +25,16 @@ class TaskController extends Controller
     }
 
     /**
+     * Display the authenticated user's tasks across projects.
+     */
+    public function myTasks()
+    {
+        $tasks = auth()->user()->assignedTasks()->with('project')->get();
+
+        return view('tasks.my-tasks', compact('tasks'));
+    }
+
+    /**
      * Show the form for creating a new task (US9)
      */
     public function create(Project $project)

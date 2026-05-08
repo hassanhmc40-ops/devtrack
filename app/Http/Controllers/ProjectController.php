@@ -28,6 +28,62 @@ class ProjectController extends Controller
     }
 
     /**
+     * Display the main dashboard with summary metrics.
+     */
+    public function dashboard()
+    {
+        $projects = auth()->user()->projects()->with('tasks')->get();
+
+        $totalTasks = $projects->sum(function ($project) {
+            return $project->tasks->count();
+        });
+        $completedTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'done')->count();
+        });
+        $todoTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'todo')->count();
+        });
+        $inProgressTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'in_progress')->count();
+        });
+        $overdueTasks = $projects->sum(function ($project) {
+            return $project->tasks->filter(function ($task) {
+                return $task->deadline && $task->deadline->isPast() && $task->status !== 'done';
+            })->count();
+        });
+
+        return view('dashboard', compact('projects', 'totalTasks', 'completedTasks', 'todoTasks', 'inProgressTasks', 'overdueTasks'));
+    }
+
+    /**
+     * Display analytics for the authenticated user's projects.
+     */
+    public function analytics()
+    {
+        $projects = auth()->user()->projects()->with('tasks')->get();
+
+        $totalTasks = $projects->sum(function ($project) {
+            return $project->tasks->count();
+        });
+        $completedTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'done')->count();
+        });
+        $todoTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'todo')->count();
+        });
+        $inProgressTasks = $projects->sum(function ($project) {
+            return $project->tasks->where('status', 'in_progress')->count();
+        });
+        $overdueTasks = $projects->sum(function ($project) {
+            return $project->tasks->filter(function ($task) {
+                return $task->deadline && $task->deadline->isPast() && $task->status !== 'done';
+            })->count();
+        });
+
+        return view('analytics.index', compact('projects', 'totalTasks', 'completedTasks', 'todoTasks', 'inProgressTasks', 'overdueTasks'));
+    }
+
+    /**
      * Show the form for creating a new project (US3)
      */
     public function create()

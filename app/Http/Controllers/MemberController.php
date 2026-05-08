@@ -9,6 +9,20 @@ use Illuminate\Http\Request;
 class MemberController extends Controller
 {
     /**
+     * Display a list of team members across the user's projects.
+     */
+    public function index()
+    {
+        $projects = auth()->user()->projects()->with('users')->get();
+
+        $members = $projects->flatMap(function ($project) {
+            return $project->users;
+        })->unique('id')->values();
+
+        return view('team-members.index', compact('members'));
+    }
+
+    /**
      * Add a member to the project (US7)
      * Only the project lead can add members.
      */

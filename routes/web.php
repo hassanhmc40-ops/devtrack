@@ -32,8 +32,17 @@ Route::middleware('auth')->group(function () {
     | Dashboard (US2 - shows user's projects with task counts)
     |----------------------------------------------------------------------
     */
-    Route::get('/dashboard', [ProjectController::class, 'index'])
+    Route::get('/dashboard', [ProjectController::class, 'dashboard'])
         ->name('dashboard');
+
+    Route::get('/my-tasks', [TaskController::class, 'myTasks'])
+        ->name('my-tasks');
+
+    Route::get('/team-members', [MemberController::class, 'index'])
+        ->name('team-members');
+
+    Route::get('/analytics', [ProjectController::class, 'analytics'])
+        ->name('analytics');
 
     /*
     |----------------------------------------------------------------------

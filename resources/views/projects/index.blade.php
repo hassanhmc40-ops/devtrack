@@ -1,6 +1,6 @@
 <x-app-layout>
-    @section('title', 'My Projects')
-    @section('topbar-title', 'My Projects')
+    @section('title', 'All Projects')
+    @section('topbar-title', 'All Projects')
 
     @section('topbar-actions')
         @can('create', App\Models\Project::class)
@@ -13,67 +13,10 @@
 
     {{-- Page Header --}}
     <div style="margin-bottom:24px;">
-        <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px;">My Projects</h1>
-        <p style="font-size:13.5px;color:#6b7280;margin:0;">Manage your active development sprints and track team progress.</p>
+        <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px;">All Projects</h1>
+        <p style="font-size:13.5px;color:#6b7280;margin:0;">Browse and manage the active projects you are assigned to.</p>
     </div>
 
-    {{-- Stats Row --}}
-    @php
-        $totalTasks     = $projects->sum('tasks_count');
-        $completedTasks = $projects->sum('completed_tasks_count');
-        $pendingTasks   = $totalTasks - $completedTasks;
-        $overdueTasks   = 0;
-        foreach ($projects as $p) {
-            foreach ($p->tasks ?? [] as $t) {
-                if ($t->deadline && $t->deadline->isPast() && $t->status !== 'done') $overdueTasks++;
-            }
-        }
-    @endphp
-
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;">
-
-        {{-- Total Tasks --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Total Tasks</span>
-                <span style="font-size:11px;font-weight:600;color:#1d4ed8;background:#eff6ff;padding:2px 8px;border-radius:20px;">+8%</span>
-            </div>
-            <div style="font-size:32px;font-weight:800;color:#111827;">{{ $totalTasks }}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Across all projects</div>
-        </div>
-
-        {{-- Pending --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Pending</span>
-                <span style="font-size:11px;font-weight:600;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:20px;">Active</span>
-            </div>
-            <div style="font-size:32px;font-weight:800;color:#111827;">{{ $pendingTasks }}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Not yet completed</div>
-        </div>
-
-        {{-- Completed --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Completed</span>
-                <span style="font-size:11px;font-weight:600;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:20px;">Goal Met</span>
-            </div>
-            <div style="font-size:32px;font-weight:800;color:#111827;">{{ $completedTasks }}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Tasks finished</div>
-        </div>
-
-        {{-- Overdue --}}
-        <div style="background:#fff;border:1px solid #fca5a5;border-radius:12px;padding:18px 20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:600;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;">Overdue</span>
-                <span style="font-size:11px;font-weight:600;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;">High Alert</span>
-            </div>
-            <div style="font-size:32px;font-weight:800;color:#dc2626;">{{ $overdueTasks }}</div>
-            <div style="font-size:12px;color:#ef4444;margin-top:2px;">Needs attention</div>
-        </div>
-    </div>
-
-    {{-- Projects Grid --}}
     @if ($projects->isEmpty())
         <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:60px;text-align:center;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 16px;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
@@ -93,7 +36,7 @@
                     $colors    = ['#1d4ed8','#16a34a','#7c3aed','#dc2626','#d97706'];
                     $color     = $colors[$loop->index % count($colors)];
                 @endphp
-                <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;transition:box-shadow .15s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='none'">
+                <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;transition:box-shadow .15s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)';" onmouseout="this.style.boxShadow='none';">
 
                     {{-- Project Header --}}
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
@@ -106,7 +49,7 @@
                         </div>
                         @can('update', $project)
                             <div style="position:relative;" x-data="{ open: false }">
-                                <button @click="open = !open" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:2px 4px;border-radius:4px;" class="icon-btn" style="border:none;">
+                                <button @click="open = !open" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:2px 4px;border-radius:4px;" class="icon-btn">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                                 </button>
                                 <div x-show="open" @click.away="open = false" style="position:absolute;right:0;top:24px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:140px;z-index:20;overflow:hidden;">

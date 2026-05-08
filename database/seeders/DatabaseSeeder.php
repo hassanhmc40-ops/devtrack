@@ -20,8 +20,6 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ProjectSeeder::class,
             TaskSeeder::class,
-
-
         ]);
         User::factory()->create([
             'name' => 'Test User',
